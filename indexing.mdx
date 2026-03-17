@@ -1,0 +1,298 @@
+---
+title: "Client-Side Encryption: How Olane Protects Your Data"
+---
+
+Your raw text never leaves your control unencrypted. Olane uses client-side AES-256-GCM encryption so that the data you send is encrypted before it reaches our servers, processed transiently in memory for extraction, and archived in its original encrypted form. The server never stores your plaintext.
+
+This post walks through how the encryption works end-to-end — key management, the ingestion flow, server-side processing, and archival — so you can understand exactly what happens to your data at every stage.
+
+---
+
+## The Core Guarantee
+
+When you send data to Olane for extraction:
+
+1. **You encrypt it** on your machine using a key only you possess
+2. **We decrypt it** in server memory for the duration of extraction
+3. **We archive it** in its original encrypted form to S3
+4. **We discard the key** — the DEK exists in server memory only for the lifetime of the request
+
+The extracted knowledge graph (entities, behaviors, containment relationships) is stored in the database. The raw text that produced it is not.
+
+---
+
+## Key Management
+
+### Your Master Key
+
+Everything starts with your master key — a secret string stored in the `COPASS_ENCRYPTION_KEY` environment variable or in your local `.olane/config.json`. You can generate one with:
+
+```bash
+python3 .olane/scripts/olane_crypto.py generate-key
+```
+
+This produces a UUID4 string and saves it to `.olane/config.json`. This key never leaves your machine. If you lose it, archived encrypted data cannot be recovered — there is no key escrow.
+
+### The Data Encryption Key (DEK)
+
+The master key is not used directly for encryption. Instead, a **Data Encryption Key** is derived from it using HKDF-SHA256:
+
+```
+Master Key → HKDF-SHA256 (salt, info) → 32-byte DEK
+```
+
+The derivation is **deterministic** — the same master key always produces the same DEK. This means you don't need to store the DEK separately; you can always re-derive it from your master key.
+
+**Why deterministic?** It eliminates key storage. You never need to manage, back up, or transmit the DEK itself. Your master key is the single secret.
+
+### Session Tokens: Protecting the DEK in Transit
+
+The DEK needs to reach the server so it can decrypt your data. Rather than sending the raw DEK over the wire, we wrap it:
+
+1. A **wrap key** is derived from your Supabase access token using HKDF-SHA256
+2. The DEK is encrypted with AES-256-GCM using this wrap key
+3. The result — the **session token** — is an opaque 60-byte blob (IV + encrypted DEK + auth tag), base64-encoded
+
+```
+Access Token → HKDF-SHA256 → Wrap Key
+Wrap Key + DEK → AES-256-GCM → Session Token (opaque)
+```
+
+The server receives the session token in the `X-Encryption-Token` header and the access token in the `Authorization` header. It derives the same wrap key from the access token and unwraps the session token to recover the DEK. Without a valid access token, the session token is meaningless.
+
+---
+
+## Encryption in Detail
+
+### Algorithm: AES-256-GCM
+
+All encryption uses AES-256-GCM, an authenticated encryption scheme that provides both **confidentiality** (your data is unreadable without the key) and **integrity** (any tampering is detected).
+
+Each encryption operation produces three values:
+
+| Field | Size | Purpose |
+|---|---|---|
+| `encrypted_text` | Variable | The ciphertext (your encrypted data) |
+| `encryption_iv` | 12 bytes | A random initialization vector (nonce) |
+| `encryption_tag` | 16 bytes | An authentication tag for tamper detection |
+
+The IV is generated randomly for every encryption operation using `os.urandom(12)`. This ensures that encrypting the same plaintext twice produces different ciphertext, preventing pattern analysis.
+
+### Encrypting Data
+
+Using the Python API:
+
+```python
+from olane_crypto import OlaneCrypto
+import os
+
+crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
+
+# Encrypt text
+encrypted = crypto.encrypt("Your sensitive text here")
+# → {"encrypted_text": "b64...", "encryption_iv": "b64...", "encryption_tag": "b64..."}
+
+# Encrypt a file
+result = crypto.encrypt_file("/path/to/document.txt")
+# → {"encrypted_file_path": "/tmp/olane_enc_xxx", "encryption_iv": "b64...", "encryption_tag": "b64..."}
+```
+
+Using the CLI:
+
+```bash
+# Encrypt a JSON payload from stdin
+echo '{"text":"Your sensitive text"}' | python3 .olane/scripts/olane_crypto.py encrypt --stdin
+
+# Encrypt a file
+python3 .olane/scripts/olane_crypto.py encrypt-file --path /path/to/file
+```
+
+---
+
+## The Ingestion Flow
+
+Here is what happens when you send encrypted data to the `/extract` endpoint:
+
+### Step 1: Client-Side Encryption
+
+Your client encrypts the plaintext and prepares the request:
+
+```python
+crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
+encrypted = crypto.encrypt("Meeting notes from standup...")
+
+# Create session token for secure DEK transport
+session_token = crypto.create_session_token(access_token)
+```
+
+### Step 2: HTTP Request
+
+The encrypted payload is sent as a standard API request:
+
+```
+POST /extract
+Authorization: Bearer <access_token>
+X-Encryption-Token: <session_token>
+Content-Type: application/json
+
+{
+  "encrypted_text": "base64-encoded ciphertext",
+  "encryption_iv": "base64-encoded IV",
+  "encryption_tag": "base64-encoded auth tag",
+  "source_type": "meeting_notes"
+}
+```
+
+Note that the request body contains **only encrypted data**. The `text` field is absent — the server knows this is an encrypted request because `encrypted_text` is present instead.
+
+### Step 3: DEK Resolution
+
+The server's `get_dek()` dependency resolves the DEK from the headers using a priority chain:
+
+1. **`X-Encryption-Token`** (preferred): Unwraps the session token using the access token from the `Authorization` header
+2. **`X-Encryption-Key`** (legacy): Parses a base64-encoded DEK directly — supported for backward compatibility with bash-based tooling
+3. **Neither header**: Treats the request as plaintext (backward-compatible for unencrypted clients)
+
+### Step 4: Decryption
+
+The server decrypts the payload in memory:
+
+```
+Session Token + Access Token → DEK (32 bytes)
+DEK + encrypted_text + IV + tag → AES-256-GCM decrypt → plaintext
+```
+
+If the DEK is wrong or the data has been tampered with, AES-GCM decryption fails with an `InvalidTag` error and the server returns HTTP 400. There is no silent corruption.
+
+### Step 5: Extraction
+
+The plaintext is processed through the extraction pipeline — LLM-based frame-semantic extraction produces structured entities, behaviors, and containment relationships. These are written to the database.
+
+### Step 6: Archival
+
+The **original encrypted payload** (not the plaintext) is archived to S3/R2:
+
+```json
+{
+  "encrypted_text": "base64-encoded ciphertext",
+  "encryption_iv": "base64-encoded IV",
+  "encryption_tag": "base64-encoded auth tag",
+  "source_type": "meeting_notes"
+}
+```
+
+S3 object metadata is tagged with `encrypted: true` along with the IV and tag for retrieval. The plaintext is never written to disk, S3, or any persistent store.
+
+### Step 7: Cleanup
+
+The DEK is discarded when the request completes. It exists only as a local variable in the request handler — no reference is retained.
+
+---
+
+## What Is and Isn't Protected
+
+### Protected
+
+- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
+- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
+- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
+
+### Not Protected
+
+- **Extracted graph structure**: Entities, behaviors, and containment relationships derived from your text are stored unencrypted in the database. These are structured abstractions, not the original text.
+- **Transient server memory**: During extraction, the plaintext exists in server memory. This is the trust boundary — you trust the server to process your data honestly for the duration of the request.
+- **Metadata**: Source type, timestamps, and extraction IDs are stored in plaintext.
+
+---
+
+## Key Rotation
+
+To rotate your master key:
+
+1. Generate a new key with `python3 .olane/scripts/olane_crypto.py generate-key` (into a new config)
+2. All new extractions will use the new DEK derived from the new master key
+3. Previously archived data remains encrypted with the old DEK — to read it, you need the old master key
+
+There is currently no automated re-encryption of archived data. If you rotate your key, retain the old master key for as long as you need access to historical archives.
+
+---
+
+## Cryptographic Primitives Summary
+
+| Component | Algorithm | Purpose |
+|---|---|---|
+| DEK derivation | HKDF-SHA256 | Derive 32-byte DEK from master key |
+| Data encryption | AES-256-GCM | Encrypt/decrypt user text |
+| Wrap key derivation | HKDF-SHA256 | Derive wrap key from access token |
+| DEK wrapping | AES-256-GCM | Encrypt DEK for transport as session token |
+| IV generation | `os.urandom(12)` | Cryptographically random 96-bit nonce per operation |
+
+All cryptographic operations use the Python `cryptography` library's hazmat primitives.
+
+---
+
+## Integration Quick Reference
+
+### Python
+
+```python
+from olane_crypto import OlaneCrypto
+import os
+
+crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
+
+# Encrypt
+encrypted = crypto.encrypt("your text")
+
+# Get session token for API calls
+session_token = crypto.create_session_token(access_token)
+
+# Get raw DEK (for X-Encryption-Key header, legacy)
+dek_b64 = crypto.dek_b64
+```
+
+### Bash / CLI
+
+```bash
+# Generate master key (one-time setup)
+python3 .olane/scripts/olane_crypto.py generate-key
+
+# Encrypt from stdin
+echo '{"text":"hello"}' | python3 .olane/scripts/olane_crypto.py encrypt --stdin
+
+# Get DEK for header
+DEK=$(python3 .olane/scripts/olane_crypto.py get-dek)
+
+# Generate session token
+TOKEN=$(python3 .olane/scripts/olane_crypto.py generate-session-token)
+```
+
+### API Headers
+
+| Header | Value | When |
+|---|---|---|
+| `X-Encryption-Token` | Base64 session token | Preferred — DEK wrapped with access token |
+| `X-Encryption-Key` | Base64 DEK | Legacy — raw DEK for bash-based tooling |
+| `Authorization` | `Bearer <access_token>` | Always required for authenticated requests |
+
+---
+
+## Frequently Asked Questions
+
+**What happens if I lose my master key?**
+Archived encrypted data becomes permanently unrecoverable. The extracted graph (entities, behaviors, containment) remains accessible since it is stored separately. Generate and back up your master key securely.
+
+**Why is the DEK deterministic rather than random per message?**
+A deterministic DEK means you never need to store or manage it — just re-derive it from your master key. Since each encryption operation uses a unique random IV, the ciphertext is still unique per message despite using the same key.
+
+**Why wrap the DEK with the access token instead of sending it directly?**
+The session token is opaque without a valid authentication session. If the token is intercepted (e.g., in a log), it cannot be unwrapped without the access token. The `X-Encryption-Key` header (raw DEK) is supported for backward compatibility but the session token approach is preferred.
+
+**Can I use my own key management system (KMS, Vault)?**
+The system expects a string in `COPASS_ENCRYPTION_KEY`. You can source that string from any secret manager — the crypto library doesn't care where it comes from, only that it's consistent.
+
+**Is the extracted graph encrypted?**
+No. The knowledge graph (entities, behaviors, containment relationships) is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
+
+**What if the server is compromised during extraction?**
+During the request lifecycle, the plaintext and DEK exist in server memory. This is the trust boundary. The encryption protects data at rest (S3 archives) and provides defense-in-depth for data in transit. It does not protect against a fully compromised server at the moment of processing.
