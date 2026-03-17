@@ -24,10 +24,7 @@
       }
     ]
   },
-  "logo": {
-    "light": "/logo/copass-p-black.png",
-    "dark": "/logo/copass-p-black.png"
-  },
+  "logo": "/logo/copass-p-black.png",
   "contextual": {
     "options": [
       "copy",
