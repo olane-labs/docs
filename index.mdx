@@ -1,15 +1,70 @@
 ---
-title: "Olane Documentation"
-description: "Documentation for Olane"
+title: "Copass by Olane"
+description: "Ontology graph-powered development context to enable Functional Memory for Claude Code"
 ---
 
-Welcome to the Olane documentation.
+Claude Code plugin for [Olane](https://olane.com) — ontology graph-powered development context to enable "Functional Memory".
 
-<Card
-  title="Client-Side Encryption"
-  icon="lock"
-  href="/client-side-encryption"
-  horizontal
->
-  Learn how Olane protects your data with client-side AES-256-GCM encryption.
-</Card>
+## Installation
+
+```bash
+# Install the Olane CLI first
+brew install olane-labs/tap/olane
+# or: npm install -g @olane/o-cli
+```
+
+```bash
+# Authenticate
+olane login
+olane setup # run in every project you want to index
+```
+
+```bash
+# In Claude Code:
+/plugin marketplace add olane-labs/mcp
+/plugin install copass@olane
+```
+
+<Accordion title="Manual MCP configuration">
+If you prefer to configure the MCP server manually, add the following to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "copass": {
+      "type": "stdio",
+      "command": "olane",
+      "args": ["copass", "--mcp"]
+    }
+  }
+}
+```
+</Accordion>
+
+<Tip>
+Having trouble? Try re-indexing your project: `olane index --mode full`
+</Tip>
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `check_project_status` | Check project indexing and authentication state |
+| `ingest_code` | Ingest source code into the knowledge graph |
+| `ingest_text` | Ingest text into the knowledge graph |
+| `cosync_analyze` | Analyze entities with confidence scoring |
+| `cosync_question` | Ask questions about the ontology |
+| `search_entities` | Search for entities in the knowledge graph |
+| `get_score` | Get cosync scores for entities |
+| `get_task_cosync` | Get cosync context for a task |
+| `get_learning_requests` | Get learning requests for low-scoring entities |
+| `index_project` | Index the current project |
+
+## How It Works
+
+The plugin runs `olane copass --mcp` which starts a unified MCP server over stdio. All authentication and encryption is handled by the Olane CLI — no separate local/remote servers needed.
+
+## Requirements
+
+- [Olane CLI](https://www.npmjs.com/package/@olane/o-cli?activeTab=readme) v2.0.0+
+- An Olane account (`olane login`)
