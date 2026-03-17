@@ -106,6 +106,33 @@ Under the hood, each ingest command encrypts the content with AES-256-GCM using 
 
 Here is what happens when you send encrypted data to the `/ingest` endpoint:
 
+```mermaid
+sequenceDiagram
+    participant User as Olane CLI
+    participant Server as Olane Server
+    participant S3 as S3 / R2
+    participant DB as Database
+
+    Note over User: Master Key → HKDF-SHA256 → DEK
+    Note over User: DEK + Plaintext → AES-256-GCM<br/>→ encrypted_text + IV + tag
+    Note over User: Access Token → HKDF-SHA256 → Wrap Key<br/>Wrap Key + DEK → Session Token
+
+    User->>Server: POST /ingest<br/>Authorization: Bearer <access_token><br/>X-Encryption-Token: <session_token><br/>{ encrypted_text, IV, tag }
+
+    Note over Server: Unwrap session token<br/>using access token → DEK
+    Note over Server: DEK + encrypted_text + IV + tag<br/>→ AES-256-GCM decrypt → plaintext
+
+    Server->>S3: Archive original encrypted payload<br/>(encrypted_text + IV + tag)
+    Note over S3: Raw text at rest:<br/>encrypted, unreadable<br/>without master key
+
+    Server->>DB: Store structured output only
+    Note over DB: Structured abstractions,<br/>not raw text
+
+    Note over Server: DEK discarded from memory
+
+    Server-->>User: 200 OK
+```
+
 ### Step 1: Client-Side Encryption
 
 The `olane` CLI encrypts the plaintext and prepares the request automatically when you run an ingest command:
