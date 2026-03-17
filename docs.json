@@ -25,8 +25,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/copass-p-black.png",
+    "dark": "/logo/copass-p-black.png"
   },
   "contextual": {
     "options": [
