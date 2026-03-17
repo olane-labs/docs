@@ -28,10 +28,10 @@ The extracted knowledge graph (entities, behaviors, containment relationships) i
 Everything starts with your master key — a secret string stored in the `COPASS_ENCRYPTION_KEY` environment variable or in your local `.olane/config.json`. You can generate one with:
 
 ```bash
-python3 .olane/scripts/olane_crypto.py generate-key
+olane setup
 ```
 
-This produces a UUID4 string and saves it to `.olane/config.json`. This key never leaves your machine. If you lose it, archived encrypted data cannot be recovered — there is no key escrow.
+This interactively sets up your project, including generating a master key and saving it to `.olane/config.json`. This key never leaves your machine. If you lose it, archived encrypted data cannot be recovered — there is no key escrow.
 
 ### The Data Encryption Key (DEK)
 
@@ -80,32 +80,17 @@ The IV is generated randomly for every encryption operation using `os.urandom(12
 
 ### Encrypting Data
 
-Using the Python API:
-
-```python
-from olane_crypto import OlaneCrypto
-import os
-
-crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
-
-# Encrypt text
-encrypted = crypto.encrypt("Your sensitive text here")
-# → {"encrypted_text": "b64...", "encryption_iv": "b64...", "encryption_tag": "b64..."}
-
-# Encrypt a file
-result = crypto.encrypt_file("/path/to/document.txt")
-# → {"encrypted_file_path": "/tmp/olane_enc_xxx", "encryption_iv": "b64...", "encryption_tag": "b64..."}
-```
-
-Using the CLI:
+The `olane` CLI handles encryption transparently when you ingest data. You don't need to call encryption commands separately:
 
 ```bash
-# Encrypt a JSON payload from stdin
-echo '{"text":"Your sensitive text"}' | python3 .olane/scripts/olane_crypto.py encrypt --stdin
+# Ingest text — encrypts and sends to the server automatically
+olane ingest text /path/to/document.txt
 
-# Encrypt a file
-python3 .olane/scripts/olane_crypto.py encrypt-file --path /path/to/file
+# Ingest code — same encryption, optimized for source files
+olane ingest code /path/to/file.py
 ```
+
+Under the hood, each ingest command encrypts the content with AES-256-GCM using the DEK derived from your master key, producing the `encrypted_text`, `encryption_iv`, and `encryption_tag` fields automatically.
 
 ---
 
@@ -115,15 +100,13 @@ Here is what happens when you send encrypted data to the `/extract` endpoint:
 
 ### Step 1: Client-Side Encryption
 
-Your client encrypts the plaintext and prepares the request:
+The `olane` CLI encrypts the plaintext and prepares the request automatically when you run an ingest command:
 
-```python
-crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
-encrypted = crypto.encrypt("Meeting notes from standup...")
-
-# Create session token for secure DEK transport
-session_token = crypto.create_session_token(access_token)
+```bash
+olane ingest text ./meeting-notes.txt
 ```
+
+Under the hood, the CLI derives the DEK from your master key, encrypts the content with AES-256-GCM, creates a session token for secure DEK transport, and sends the encrypted payload to the server.
 
 ### Step 2: HTTP Request
 
@@ -209,7 +192,7 @@ The DEK is discarded when the request completes. It exists only as a local varia
 
 To rotate your master key:
 
-1. Generate a new key with `python3 .olane/scripts/olane_crypto.py generate-key` (into a new config)
+1. Generate a new key with `olane setup` (into a new config) or set one directly with `olane config set copass_encryption_key <new-key>`
 2. All new extractions will use the new DEK derived from the new master key
 3. Previously archived data remains encrypted with the old DEK — to read it, you need the old master key
 
@@ -227,44 +210,32 @@ There is currently no automated re-encryption of archived data. If you rotate yo
 | DEK wrapping | AES-256-GCM | Encrypt DEK for transport as session token |
 | IV generation | `os.urandom(12)` | Cryptographically random 96-bit nonce per operation |
 
-All cryptographic operations use the Python `cryptography` library's hazmat primitives.
+All cryptographic operations use the `cryptography` library's hazmat primitives.
 
 ---
 
 ## Integration Quick Reference
 
-### Python
-
-```python
-from olane_crypto import OlaneCrypto
-import os
-
-crypto = OlaneCrypto(copass_encryption_key=os.environ["COPASS_ENCRYPTION_KEY"])
-
-# Encrypt
-encrypted = crypto.encrypt("your text")
-
-# Get session token for API calls
-session_token = crypto.create_session_token(access_token)
-
-# Get raw DEK (for X-Encryption-Key header, legacy)
-dek_b64 = crypto.dek_b64
-```
-
-### Bash / CLI
+### CLI (`@olane/o-cli`)
 
 ```bash
-# Generate master key (one-time setup)
-python3 .olane/scripts/olane_crypto.py generate-key
+# Setup project (generates master key)
+olane setup
 
-# Encrypt from stdin
-echo '{"text":"hello"}' | python3 .olane/scripts/olane_crypto.py encrypt --stdin
+# Ingest text (encryption handled automatically)
+olane ingest text /path/to/file.txt
 
-# Get DEK for header
-DEK=$(python3 .olane/scripts/olane_crypto.py get-dek)
+# Ingest code
+olane ingest code /path/to/file.py
 
-# Generate session token
-TOKEN=$(python3 .olane/scripts/olane_crypto.py generate-session-token)
+# Check project status
+olane status
+
+# View current config
+olane config get
+
+# Update encryption key
+olane config set copass_encryption_key <new-key>
 ```
 
 ### API Headers
