@@ -8,14 +8,6 @@ This post walks through how the encryption works end-to-end — key management, 
 
 ---
 
-## TLDR
-
-- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
-- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
-- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
-
----
-
 ## The Core Guarantee
 
 When you send data to Olane for analysis:
@@ -26,6 +18,14 @@ When you send data to Olane for analysis:
 4. **We discard the key** — the DEK exists in server memory only for the lifetime of the request
 
 The structured output is stored in the database. The raw text that produced it is not.
+
+---
+
+## TL;DR (Technical)
+
+- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
+- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
+- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
 
 ---
 
