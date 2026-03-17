@@ -8,6 +8,14 @@ This post walks through how the encryption works end-to-end — key management, 
 
 ---
 
+## TLDR
+
+- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
+- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
+- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
+
+---
+
 ## The Core Guarantee
 
 When you send data to Olane for analysis:
@@ -17,7 +25,7 @@ When you send data to Olane for analysis:
 3. **We archive it** in its original encrypted form to S3
 4. **We discard the key** — the DEK exists in server memory only for the lifetime of the request
 
-The structured output (entities, behaviors, containment relationships) is stored in the database. The raw text that produced it is not.
+The structured output is stored in the database. The raw text that produced it is not.
 
 ---
 
@@ -147,11 +155,7 @@ DEK + encrypted_text + IV + tag → AES-256-GCM decrypt → plaintext
 
 If the DEK is wrong or the data has been tampered with, AES-GCM decryption fails with an `InvalidTag` error and the server returns HTTP 400. There is no silent corruption.
 
-### Step 5: Analysis
-
-The plaintext is processed through the analysis engine to produce structured entities, behaviors, and containment relationships. These are written to the database.
-
-### Step 6: Archival
+### Step 5: Archival
 
 The **original encrypted payload** (not the plaintext) is archived to S3/R2:
 
@@ -166,19 +170,9 @@ The **original encrypted payload** (not the plaintext) is archived to S3/R2:
 
 S3 object metadata is tagged with `encrypted: true` along with the IV and tag for retrieval. The plaintext is never written to disk, S3, or any persistent store.
 
-### Step 7: Cleanup
+### Step 6: Cleanup
 
 The DEK is discarded when the request completes. It exists only as a local variable in the request handler — no reference is retained.
-
----
-
-## What Is and Isn't Protected
-
-### Protected
-
-- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
-- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
-- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
 
 ---
 
@@ -245,7 +239,7 @@ olane config set copass_encryption_key <new-key>
 ## Frequently Asked Questions
 
 **What happens if I lose my master key?**
-Archived encrypted data becomes permanently unrecoverable. The structured output (entities, behaviors, containment) remains accessible since it is stored separately. Generate and back up your master key securely.
+Archived encrypted data becomes permanently unrecoverable. The structured output remains accessible since it is stored separately. Generate and back up your master key securely.
 
 **Why is the DEK deterministic rather than random per message?**
 A deterministic DEK means you never need to store or manage it — just re-derive it from your master key. Since each encryption operation uses a unique random IV, the ciphertext is still unique per message despite using the same key.
@@ -257,7 +251,7 @@ The session token is opaque without a valid authentication session. If the token
 The system expects a string in `COPASS_ENCRYPTION_KEY`. You can source that string from any secret manager — the crypto library doesn't care where it comes from, only that it's consistent.
 
 **Is the structured output encrypted?**
-No. The structured output (entities, behaviors, containment relationships) is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
+No. The structured output is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
 
 **What if the server is compromised during analysis?**
 During the request lifecycle, the plaintext and DEK exist in server memory. This is the trust boundary. The encryption protects data at rest (S3 archives) and provides defense-in-depth for data in transit. It does not protect against a fully compromised server at the moment of processing.
