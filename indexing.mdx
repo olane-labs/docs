@@ -111,7 +111,6 @@ sequenceDiagram
     participant User as Olane CLI
     participant Server as Olane Server
     participant S3 as S3 / R2
-    participant DB as Database
 
     Note over User: Master Key → HKDF-SHA256 → DEK
     Note over User: DEK + Plaintext → AES-256-GCM<br/>→ encrypted_text + IV + tag
@@ -124,9 +123,6 @@ sequenceDiagram
 
     Server->>S3: Archive original encrypted payload<br/>(encrypted_text + IV + tag)
     Note over S3: Raw text at rest:<br/>encrypted, unreadable<br/>without master key
-
-    Server->>DB: Store structured output only
-    Note over DB: Structured abstractions,<br/>not raw text
 
     Note over Server: DEK discarded from memory
 
@@ -260,6 +256,28 @@ olane config set copass_encryption_key <new-key>
 | `X-Encryption-Token` | Base64 session token | Preferred — DEK wrapped with access token |
 | `X-Encryption-Key` | Base64 DEK | Legacy — raw DEK for bash-based tooling |
 | `Authorization` | `Bearer <access_token>` | Always required for authenticated requests |
+
+---
+
+## How to Update
+
+To update the Olane CLI to the latest version:
+
+```bash
+# npm
+npm update -g @olane/o-cli
+
+# Homebrew
+brew upgrade olane
+```
+
+You can check your current version with:
+
+```bash
+olane --version
+```
+
+Your local configuration (`.olane/config.json`) and master key are preserved across updates — no re-setup is needed.
 
 ---
 
