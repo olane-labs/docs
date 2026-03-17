@@ -2,7 +2,7 @@
 title: "Client-Side Encryption: How Olane Protects Your Data"
 ---
 
-Your raw text never leaves your control unencrypted. Olane uses client-side AES-256-GCM encryption so that the data you send is encrypted before it reaches our servers, processed transiently in memory for extraction, and archived in its original encrypted form. The server never stores your plaintext.
+Your raw text never leaves your control unencrypted. Olane uses client-side AES-256-GCM encryption so that the data you send is encrypted before it reaches our servers, processed transiently in memory for analysis, and archived in its original encrypted form. The server never stores your plaintext.
 
 This post walks through how the encryption works end-to-end — key management, the ingestion flow, server-side processing, and archival — so you can understand exactly what happens to your data at every stage.
 
@@ -10,14 +10,14 @@ This post walks through how the encryption works end-to-end — key management, 
 
 ## The Core Guarantee
 
-When you send data to Olane for extraction:
+When you send data to Olane for analysis:
 
 1. **You encrypt it** on your machine using a key only you possess
-2. **We decrypt it** in server memory for the duration of extraction
+2. **We decrypt it** in server memory for the duration of analysis
 3. **We archive it** in its original encrypted form to S3
 4. **We discard the key** — the DEK exists in server memory only for the lifetime of the request
 
-The extracted knowledge graph (entities, behaviors, containment relationships) is stored in the database. The raw text that produced it is not.
+The structured output (entities, behaviors, containment relationships) is stored in the database. The raw text that produced it is not.
 
 ---
 
@@ -96,7 +96,7 @@ Under the hood, each ingest command encrypts the content with AES-256-GCM using 
 
 ## The Ingestion Flow
 
-Here is what happens when you send encrypted data to the `/extract` endpoint:
+Here is what happens when you send encrypted data to the `/ingest` endpoint:
 
 ### Step 1: Client-Side Encryption
 
@@ -113,7 +113,7 @@ Under the hood, the CLI derives the DEK from your master key, encrypts the conte
 The encrypted payload is sent as a standard API request:
 
 ```
-POST /extract
+POST /ingest
 Authorization: Bearer <access_token>
 X-Encryption-Token: <session_token>
 Content-Type: application/json
@@ -147,9 +147,9 @@ DEK + encrypted_text + IV + tag → AES-256-GCM decrypt → plaintext
 
 If the DEK is wrong or the data has been tampered with, AES-GCM decryption fails with an `InvalidTag` error and the server returns HTTP 400. There is no silent corruption.
 
-### Step 5: Extraction
+### Step 5: Analysis
 
-The plaintext is processed through the extraction pipeline — LLM-based frame-semantic extraction produces structured entities, behaviors, and containment relationships. These are written to the database.
+The plaintext is processed through the analysis engine to produce structured entities, behaviors, and containment relationships. These are written to the database.
 
 ### Step 6: Archival
 
@@ -180,12 +180,6 @@ The DEK is discarded when the request completes. It exists only as a local varia
 - **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
 - **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
 
-### Not Protected
-
-- **Extracted graph structure**: Entities, behaviors, and containment relationships derived from your text are stored unencrypted in the database. These are structured abstractions, not the original text.
-- **Transient server memory**: During extraction, the plaintext exists in server memory. This is the trust boundary — you trust the server to process your data honestly for the duration of the request.
-- **Metadata**: Source type, timestamps, and extraction IDs are stored in plaintext.
-
 ---
 
 ## Key Rotation
@@ -193,7 +187,7 @@ The DEK is discarded when the request completes. It exists only as a local varia
 To rotate your master key:
 
 1. Generate a new key with `olane setup` (into a new config) or set one directly with `olane config set copass_encryption_key <new-key>`
-2. All new extractions will use the new DEK derived from the new master key
+2. All new ingestions will use the new DEK derived from the new master key
 3. Previously archived data remains encrypted with the old DEK — to read it, you need the old master key
 
 There is currently no automated re-encryption of archived data. If you rotate your key, retain the old master key for as long as you need access to historical archives.
@@ -251,7 +245,7 @@ olane config set copass_encryption_key <new-key>
 ## Frequently Asked Questions
 
 **What happens if I lose my master key?**
-Archived encrypted data becomes permanently unrecoverable. The extracted graph (entities, behaviors, containment) remains accessible since it is stored separately. Generate and back up your master key securely.
+Archived encrypted data becomes permanently unrecoverable. The structured output (entities, behaviors, containment) remains accessible since it is stored separately. Generate and back up your master key securely.
 
 **Why is the DEK deterministic rather than random per message?**
 A deterministic DEK means you never need to store or manage it — just re-derive it from your master key. Since each encryption operation uses a unique random IV, the ciphertext is still unique per message despite using the same key.
@@ -262,8 +256,8 @@ The session token is opaque without a valid authentication session. If the token
 **Can I use my own key management system (KMS, Vault)?**
 The system expects a string in `COPASS_ENCRYPTION_KEY`. You can source that string from any secret manager — the crypto library doesn't care where it comes from, only that it's consistent.
 
-**Is the extracted graph encrypted?**
-No. The knowledge graph (entities, behaviors, containment relationships) is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
+**Is the structured output encrypted?**
+No. The structured output (entities, behaviors, containment relationships) is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
 
-**What if the server is compromised during extraction?**
+**What if the server is compromised during analysis?**
 During the request lifecycle, the plaintext and DEK exist in server memory. This is the trust boundary. The encryption protects data at rest (S3 archives) and provides defense-in-depth for data in transit. It does not protect against a fully compromised server at the moment of processing.
