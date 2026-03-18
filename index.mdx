@@ -162,16 +162,14 @@ In this example, Claude knows `PaymentService` well but has almost no context fo
 
 | Tool | Description |
 |------|-------------|
-| `check_project_status` | Check project indexing and authentication state |
-| `ingest_code` | Ingest source code into the knowledge graph |
-| `ingest_text` | Ingest text into the knowledge graph |
-| `cosync_analyze` | Analyze entities with confidence scoring |
-| `cosync_question` | Ask questions about the ontology |
-| `search_entities` | Search for entities in the knowledge graph |
-| `get_score` | Get cosync scores for entities |
-| `get_task_cosync` | Get cosync context for a task |
-| `get_learning_requests` | Get learning requests for low-scoring entities |
-| `index_project` | Index the current project |
+| `check_project_status` | Check if the current project has been indexed and its status |
+| `context_query` | Ask a natural language question against the ontology knowledge graph |
+| `context_summary` | Get an LLM-generated context summary for canonical entities or free-form text |
+| `search_entities` | Search the ontology graph by name or description |
+| `get_score` | Score how well the knowledge graph understands a topic |
+| `ingest_code` | Ingest source code into the ontology for entity extraction |
+| `ingest_text` | Ingest text content into the ontology for entity extraction |
+| `index_project` | Index the current project for ontology enrichment |
 
 ## CLI Reference
 
@@ -186,36 +184,51 @@ olane search <query>        # search the ontology graph for entities, relationsh
 ### Copass (CLI equivalents of MCP tools)
 
 ```bash
-olane copass question <question>   # ask a question about the ontology
-olane copass context               # get cosync context for the current task
-olane copass score                 # get cosync scores for entities
+olane copass question <question>   # ask a natural language question against the ontology
+olane copass context               # get LLM-generated context summary for entities or text
+olane copass score <query>         # score how well the knowledge graph understands a topic
 ```
 
 ### Watch
 
 ```bash
-olane watch                 # start continuous indexing — watches for file changes and re-indexes automatically
+olane watch                        # start continuous incremental indexing
+olane watch status                 # check watch status
+olane watch install-service        # install and start as a background service
+olane watch uninstall-service      # uninstall the background service
 ```
 
 ### API Key Management
 
 ```bash
-olane api-key               # manage API keys for programmatic access
+olane api-key create [--name <name>]   # create a new API key
+olane api-key list                     # list active API keys
+olane api-key revoke <key-id>          # revoke an API key
 ```
 
-### Ingest Flags
-
-The `olane ingest` commands accept additional flags:
+### Configuration
 
 ```bash
-olane ingest text /path/to/file.txt \
-  --stdin               # read from stdin instead of a file \
-  --language <lang>     # specify language (e.g. "en") \
-  --additional-context <ctx>  # extra context to associate with the ingestion \
-  --project-id <id>     # target a specific project \
-  --json                # output results as JSON \
-  --source-type <type>  # classify the source (e.g. "meeting_notes", "documentation") \
-  --entity-hints <hints> # hint at expected entities to improve extraction
+olane config set <key> <value>     # set a config value
+olane config get <key>             # get a config value
+olane config list                  # list all config values
+```
+
+### Ingest
+
+```bash
+olane ingest code [file]           # ingest source code (or stdin with --stdin)
+olane ingest text [file]           # ingest text content (or stdin with --stdin)
+```
+
+Common flags: `--additional-context <ctx>`, `--project-id <id>`, `--json`. Code-specific: `--language <lang>`, `--file-path <path>`. Text-specific: `--source-type <type>`, `--entity-hints <hints>`.
+
+### Utilities
+
+```bash
+olane status [--json]              # check project indexing status
+olane upgrade [--dry-run]          # upgrade CLI to latest version
+olane transcript clean <file>      # clean Claude Code transcript JSONL into readable markdown
 ```
 
 ## Architecture
