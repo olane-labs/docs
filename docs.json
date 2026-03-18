@@ -36,5 +36,9 @@
       "cursor",
       "vscode"
     ]
+  },
+  "appearance": {
+    "strict": false,
+    "default": "light"
   }
 }
