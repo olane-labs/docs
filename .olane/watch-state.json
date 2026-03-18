@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "projectPath": "/Users/brendon/Development/olane/olane-docs",
+  "lastEventAt": "2026-03-18T18:41:35.727Z",
+  "lastSuccessAt": "2026-03-18T18:41:38.632Z",
+  "lastError": null,
+  "files": {
+    ".mcp.json": {
+      "mtimeMs": 1773849951714.0352,
+      "size": 154,
+      "sha256": "7db85824dbb5bdda9cb06a26b5e9b0127abea2808c87b2b819d6965c9542f93e",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "AGENTS.md": {
+      "mtimeMs": 1773709367431.9788,
+      "size": 1160,
+      "sha256": "db245df29070031e049405a6f4ffeb46306f87a979781cd42fc0530074a299a3",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "CLAUDE.md": {
+      "mtimeMs": 1773849951713.1294,
+      "size": 851,
+      "sha256": "34e84f850b53fe5a7ebd3c2157cbb3c6bdce7f2b8124f6aacb3dbbf2bd8510d1",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "CONTRIBUTING.md": {
+      "mtimeMs": 1773709367432.022,
+      "size": 1397,
+      "sha256": "0aaff0dfa4d76f61a505d566351ac3872c06beb0dbb4864d0001e7ea71bc38db",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "README.md": {
+      "mtimeMs": 1773825237793.6943,
+      "size": 8126,
+      "sha256": "78d652bc70f42a20a94ea11fccab88e2fce7c75de09bfcb92da66c3404fe014d",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "benchmarks.mdx": {
+      "mtimeMs": 1773859293708.681,
+      "size": 6636,
+      "sha256": "761ac3faf1e0840c5e0aa84c386be4ca3652bbf5f0c2c219bb695313a3b4cb39",
+      "lastIndexedAt": "2026-03-18T18:41:37.231Z"
+    },
+    "docs/benchmarks.md": {
+      "mtimeMs": 1773825349190.6553,
+      "size": 3201,
+      "sha256": "735465c30fde6032e6e562245b05ac92425abf28228a4f3aca14504590580d29",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "docs/security.md": {
+      "mtimeMs": 1773825328117.897,
+      "size": 12169,
+      "sha256": "84eea9a0cb056b590b8a648e08ed54ccd6448ac33fa6f8d81ebb18ff28d6082e",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "docs.json": {
+      "mtimeMs": 1773853217217.1277,
+      "size": 1249,
+      "sha256": "4a4d798345381880132fa572aad7c9fcab24a5ddf1e018236fd395d67da39d85",
+      "lastIndexedAt": "2026-03-18T17:00:20.728Z"
+    },
+    "index.mdx": {
+      "mtimeMs": 1773850757023.07,
+      "size": 11199,
+      "sha256": "ef2b2f1a9800d7d914be359ee5bf1db259778265e2cfab200bf0275386fdab2b",
+      "lastIndexedAt": "2026-03-18T16:19:20.563Z"
+    },
+    "indexing.mdx": {
+      "mtimeMs": 1773820356064.6777,
+      "size": 12180,
+      "sha256": "20016674e5cb05258545e2ae0503f222fdd28c5be59d22909815699d03ede917",
+      "lastIndexedAt": "2026-03-18T16:05:56.814Z"
+    },
+    "ontology.mdx": {
+      "mtimeMs": 1773854427891.9385,
+      "size": 2771,
+      "sha256": "36fa9749993d77acef0eb227ca9584620793ae14d66628cbde4d367d0a1c6262",
+      "lastIndexedAt": "2026-03-18T17:20:31.143Z"
+    },
+    "api.mdx": {
+      "mtimeMs": 1773853162769.303,
+      "size": 2180,
+      "sha256": "36b1392a9c9b3eef0362bba11ebd96ecaeff5739e8cf9f08f791ecc25003a941",
+      "lastIndexedAt": "2026-03-18T16:59:26.283Z"
+    }
+  }
+}

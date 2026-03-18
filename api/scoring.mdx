@@ -1,0 +1,103 @@
+---
+title: "Scoring"
+description: "Check confidence scores for entities and plans before taking action"
+---
+
+## Score Entities
+
+```
+POST /api/v1/cosync
+```
+
+Get confidence scores for entities — how well the ontology understands them. You can pass entity IDs directly or text that will be auto-scoped to relevant entities.
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `canonical_ids` | string[] | * | Entity UUIDs to score |
+| `text` | string | * | Text to auto-scope (max 1,500 chars) |
+
+<Info>Provide either `canonical_ids` or `text`.</Info>
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/cosync \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "PaymentService webhook handler"
+  }'
+```
+
+**Response**
+
+```json
+{
+  "aggregate_score": 0.74,
+  "entities": [
+    { "canonical_id": "a1b2c3d4-...", "name": "PaymentService", "score": 0.87 },
+    { "canonical_id": "f9e8d7c6-...", "name": "WebhookHandler", "score": 0.61 }
+  ],
+  "total_scored": 2,
+  "computation_time_ms": 45.2
+}
+```
+
+---
+
+## Score a Plan
+
+```
+POST /api/v2/plans/cosync
+```
+
+Score a proposed plan before execution. Returns per-entity confidence, an overall tier, and a recommendation for how to proceed.
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `plan_text` | string | yes | Natural language description of the plan |
+| `entities` | object[] | no | Pre-identified entities: `[{"name": "...", "canonical_id": "..."}]` |
+| `project_id` | string | no | UUID — scope to a specific project |
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v2/plans/cosync \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_text": "Add rate limiting to the PaymentService webhook handler to prevent duplicate charge processing",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+**Response**
+
+```json
+{
+  "aggregate_score": 0.58,
+  "tier": "moderate",
+  "tier_label": "Moderate Confidence",
+  "tier_action": "Proceed with awareness — some context may be missing",
+  "recommendation": "The ontology has moderate understanding of PaymentService but limited context for RateLimiter. Consider providing more context about rate limiting patterns before executing.",
+  "entities": [
+    { "entity_name": "PaymentService", "canonical_id": "a1b2c3d4-...", "score": 0.87 },
+    { "entity_name": "WebhookHandler", "canonical_id": "f9e8d7c6-...", "score": 0.61 },
+    { "entity_name": "RateLimiter", "canonical_id": "b2c3d4e5-...", "score": 0.15 }
+  ],
+  "weakest_entity": "RateLimiter",
+  "learning_priorities": [
+    {
+      "entity_name": "RateLimiter",
+      "canonical_id": "b2c3d4e5-...",
+      "score": 0.15
+    }
+  ],
+  "is_cold_start": false,
+  "computation_time_ms": 120.5
+}
+```

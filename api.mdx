@@ -1,0 +1,85 @@
+---
+title: "API Reference"
+description: "Integrate with Olane's HTTP API to ingest knowledge and query the ontology"
+---
+
+All endpoints are served from your Olane API base URL. Requests require authentication via API key or JWT token.
+
+## Authentication
+
+### API Keys
+
+API keys are the recommended authentication method for integrations. Create one with the CLI:
+
+```bash
+olane api-key create --name "my-integration"
+```
+
+The key is shown once on creation. It looks like `olk_abc123...`. Use it as a bearer token:
+
+```bash
+curl -X POST {BASE_URL}/api/v1/extract \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"text": "..."}'
+```
+
+Keys can be listed and revoked:
+
+```bash
+olane api-key list
+olane api-key revoke <key-id>
+```
+
+### JWT Tokens
+
+The CLI and MCP server use JWT tokens internally. If you're building on top of the Olane auth system, pass the JWT as a bearer token in the same header:
+
+```
+Authorization: Bearer eyJhbGciOi...
+```
+
+### Encryption (Optional)
+
+Olane supports client-side AES-256-GCM encryption for sensitive payloads. When using encryption, send the encrypted payload instead of plaintext:
+
+| Header | Purpose |
+|---|---|
+| `X-Encryption-Token` | Session token (preferred) — DEK wrapped with your access token |
+| `X-Encryption-Key` | Base64-encoded DEK (legacy) |
+
+When encrypted, replace the `text` field with:
+
+| Field | Description |
+|---|---|
+| `encrypted_text` | Base64-encoded ciphertext |
+| `encryption_iv` | Base64-encoded 12-byte IV |
+| `encryption_tag` | Base64-encoded 16-byte auth tag |
+
+See [Security & Indexing](/indexing) for the full encryption flow.
+
+---
+
+## Error Responses
+
+All endpoints use standard HTTP status codes:
+
+| Status | Meaning |
+|---|---|
+| `400` | Invalid request — missing or malformed fields |
+| `401` | Authentication failed — invalid or expired token |
+| `404` | Resource not found |
+| `422` | Validation error — field constraints violated |
+| `500` | Internal error |
+
+Error responses include a structured body:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Input content cannot be empty",
+    "correlation_id": "550e8400-..."
+  }
+}
+```

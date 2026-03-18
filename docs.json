@@ -20,6 +20,24 @@
               "indexing",
               "benchmarks"
             ]
+          },
+          {
+            "group": "The Ontology",
+            "pages": [
+              "ontology",
+              "ontology/knowledge-organization",
+              "ontology/confidence-scoring",
+              "ontology/interaction-and-learning"
+            ]
+          },
+          {
+            "group": "API",
+            "pages": [
+              "api",
+              "api/ingestion",
+              "api/querying",
+              "api/scoring"
+            ]
           }
         ]
       }

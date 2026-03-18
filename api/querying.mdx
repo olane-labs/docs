@@ -1,0 +1,137 @@
+---
+title: "Querying"
+description: "Ask questions, get context summaries, and search entities in the ontology"
+---
+
+## Ask a Question
+
+```
+POST /api/v1/data/query/interpret
+```
+
+Ask a natural language question against the ontology. Returns an LLM-synthesized answer grounded in the knowledge graph.
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `question` | string | yes | Natural language question (max 5,000 chars) |
+| `detail_level` | string | no | `"concise"` (default) or `"detailed"` |
+| `max_tokens` | integer | no | Response length limit (100–16,000) |
+| `project_id` | string | no | UUID — scope to a specific project |
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/data/query/interpret \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What does PaymentService do and what other services does it interact with?",
+    "detail_level": "detailed"
+  }'
+```
+
+**Response**
+
+```json
+{
+  "question": "What does PaymentService do and what other services does it interact with?",
+  "summary": "PaymentService handles charge processing and refunds. It integrates with Stripe via a webhook handler and is called by the OrderService during checkout. Alice recently flagged that the webhook handler needs rate limiting.",
+  "execution_time_ms": 1240,
+  "entities": [
+    { "canonical_id": "a1b2c3d4-...", "name": "PaymentService" },
+    { "canonical_id": "e5f6a7b8-...", "name": "Stripe" }
+  ]
+}
+```
+
+---
+
+## Get a Context Summary
+
+```
+POST /api/v1/data/query/context
+```
+
+Get a structured summary of what the ontology knows about specific entities. You can provide entity IDs directly, or pass free-form text and let the system resolve the relevant entities automatically.
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `canonical_id` | string | * | UUID of a single entity |
+| `canonical_ids` | string[] | * | UUIDs of multiple entities (max 20) |
+| `text_input` | string | * | Free-form text — entities are resolved automatically (max 5,000 chars) |
+| `detail_level` | string | no | `"concise"` (default) or `"detailed"` |
+
+<Info>Provide at least one of `canonical_id`, `canonical_ids`, or `text_input`.</Info>
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/data/query/context \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text_input": "PaymentService and Stripe integration"
+  }'
+```
+
+**Response**
+
+```json
+{
+  "canonical_ids": ["a1b2c3d4-...", "e5f6a7b8-..."],
+  "summary": "PaymentService processes charges and refunds through Stripe's API. The integration uses a webhook handler to receive payment status updates. Recent observations indicate the webhook handler needs rate limiting before production deployment.",
+  "execution_time_ms": 980
+}
+```
+
+---
+
+## Search Entities
+
+```
+GET /api/v1/canonicals/search
+```
+
+Find entities by name or description using similarity-based matching.
+
+**Query Parameters**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | yes | Search query (max 500 chars) |
+| `limit` | integer | no | Max results (default: 10, max: 100) |
+| `min_similarity` | float | no | Similarity threshold 0–1 (default: 0.5) |
+| `project_id` | string | no | UUID — filter by project |
+
+**Example**
+
+```bash
+curl "{BASE_URL}/api/v1/canonicals/search?query=payment&limit=5" \
+  -H "Authorization: Bearer olk_abc123..."
+```
+
+**Response**
+
+```json
+{
+  "query": "payment",
+  "results": [
+    {
+      "canonical_id": "a1b2c3d4-...",
+      "name": "PaymentService",
+      "cosync_score": 0.87
+    },
+    {
+      "canonical_id": "e5f6a7b8-...",
+      "name": "Stripe",
+      "cosync_score": 0.62
+    }
+  ],
+  "count": 2,
+  "min_similarity": 0.5
+}
+```

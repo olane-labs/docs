@@ -1,0 +1,46 @@
+---
+title: "The Ontology"
+description: "How Olane structures knowledge into a semantic graph and how you query it"
+---
+
+```
+  Backend                          GitHub                        Alice
+  ├── auth/                        ├── pull requests             └─ reviews PRs ─────────────┐
+  │   ├── UserService              │   └─ require approval ◄──── reviews PRs ◄──────────────┘
+  │   │   ├─ handles login         │                        ▲
+  │   │   └─ validates tokens ───────── tokens scoped to ──┘
+  │   └── RateLimiter              └── actions
+  │       └─ throttles requests            └─ triggers deploys
+  └── payments/                                    │
+      └── PaymentService                           ▼
+          ├─ processes charges              Vercel
+          └─ calls Stripe ──────────►       ├── deployments
+                                   │       │   └─ runs on push
+                                   ▼       └── environment
+                                 Stripe        └─ stores secrets
+                                 └─ handles webhooks
+```
+
+<div style={{ fontSize: '0.8rem', color: '#6B7280', marginBottom: '1.5rem' }}>
+Arrows show how entities depend on each other across different parts of the graph.
+</div>
+
+## From Static Memory to Structured Knowledge
+
+Most approaches to giving AI systems memory treat it as a retrieval problem: store text, embed it, search it later. Whether it's RAG, vector databases, or context files — the data is inert. It doesn't know what it knows, what it's missing, or how confident it should be about any particular answer.
+
+Olane takes a different approach. Instead of storing and retrieving text, it builds a **living model** — an ontology graph that organizes knowledge semantically, measures its own understanding, and improves over time. The result is a system that can tell you not just *what* it knows, but *how well* it knows it.
+
+---
+
+<CardGroup cols={3}>
+  <Card title="Knowledge Organization" icon="diagram-project" href="/ontology/knowledge-organization">
+    Entities and dependencies — the building blocks of the graph.
+  </Card>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/ontology/confidence-scoring">
+    How Olane quantifies understanding with score bands and graceful degradation.
+  </Card>
+  <Card title="Interaction & Self-Improvement" icon="arrows-spin" href="/ontology/interaction-and-learning">
+    Feeding knowledge in, querying it out, and how the system learns from itself over time.
+  </Card>
+</CardGroup>

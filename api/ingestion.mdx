@@ -1,0 +1,143 @@
+---
+title: "Ingestion"
+description: "Extract entities, behaviors, and relationships from text, code, and files"
+---
+
+Ingestion endpoints extract entities, behaviors, and relationships from your content and add them to the ontology graph. All ingestion is **asynchronous** — the API accepts the job and returns a polling URL.
+
+## Ingest Text
+
+```
+POST /api/v1/extract
+```
+
+Send natural language content — meeting notes, Slack messages, documentation, emails.
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `text` | string | yes | Content to ingest (max 100,000 chars). Omit if sending `encrypted_text`. |
+| `source_type` | string | no | Content type: `"conversation"`, `"email"`, `"document"`, `"markdown"`, `"csv"`, etc. Default: `"manual"` |
+| `source_id` | string | no | Your identifier for this content (e.g., message ID, doc ID) |
+| `entity_hints` | string[] | no | Entity names to help with resolution (max 20). E.g., `["Alice", "PaymentService"]` |
+| `additional_context` | object | no | Custom metadata to associate with this content |
+| `project_id` | string | no | UUID — scope to a specific project |
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/extract \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Alice reviewed the PR for PaymentService. She flagged that the webhook handler needs rate limiting before we ship.",
+    "source_type": "conversation",
+    "entity_hints": ["Alice", "PaymentService"]
+  }'
+```
+
+**Response** — `202 Accepted`
+
+```json
+{
+  "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "extraction_id": "550e8400-e29b-41d4-a716-446655440000",
+  "job_id": "evt_550e8400",
+  "status": "queued",
+  "status_url": "/api/v1/extract/jobs/evt_550e8400"
+}
+```
+
+---
+
+## Ingest Code
+
+```
+POST /api/v1/extract/code
+```
+
+Same request shape as text ingestion, optimized for source code extraction (Python, TypeScript, Go, Rust, Java, etc.).
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/extract/code \
+  -H "Authorization: Bearer olk_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "class PaymentService:\n    def process_charge(self, amount, currency):\n        return self.stripe_client.create_charge(amount, currency)",
+    "source_type": "code"
+  }'
+```
+
+---
+
+## Ingest File
+
+```
+POST /api/v1/extract/file
+```
+
+Upload a file directly. Supports PDF, DOCX, Markdown, CSV, TXT, and source code files. File type is auto-detected from the extension.
+
+**Form Fields**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `file` | file | yes | The file to ingest |
+| `source_type` | string | no | Override auto-detected type |
+| `source_id` | string | no | Your identifier for this file |
+| `project_id` | string | no | UUID — scope to a specific project |
+| `additional_context` | JSON string | no | Custom metadata |
+
+**Example**
+
+```bash
+curl -X POST {BASE_URL}/api/v1/extract/file \
+  -H "Authorization: Bearer olk_abc123..." \
+  -F "file=@./src/payment_service.py" \
+  -F "project_id=550e8400-e29b-41d4-a716-446655440000"
+```
+
+---
+
+## Poll Job Status
+
+```
+GET /api/v1/extract/jobs/{job_id}
+```
+
+Check the status of an ingestion job. Poll until `status` is `"completed"` or `"failed"`.
+
+**Example**
+
+```bash
+curl {BASE_URL}/api/v1/extract/jobs/evt_550e8400 \
+  -H "Authorization: Bearer olk_abc123..."
+```
+
+**Response**
+
+```json
+{
+  "job_id": "evt_550e8400",
+  "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "result": {
+    "events_created": 7,
+    "nodes_extracted": 3,
+    "behaviors_extracted": 2,
+    "containments_extracted": 2,
+    "canonical_entities": [
+      {
+        "canonical_id": "a1b2c3d4-...",
+        "entity_name": "PaymentService",
+        "was_created": false
+      }
+    ]
+  }
+}
+```
+
+Status values: `"queued"` → `"processing"` → `"completed"` | `"failed"`

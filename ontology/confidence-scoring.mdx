@@ -1,0 +1,30 @@
+---
+title: "Confidence Scoring"
+description: "How Olane quantifies understanding with score bands and graceful degradation"
+---
+
+### What It Measures
+
+Olane quantifies how well it understands each entity with a **confidence score** between 0 and 1. This is the critical departure from static memory: the system tells you *how much it knows* before it acts.
+
+### What Drives the Score
+
+The confidence score reflects multiple signals about what the system has seen:
+
+- How recently and how often the entity has appeared across ingestions
+- Whether its known behaviors are corroborated by independent sources — code, conversations, documentation
+
+A single mention in one document produces a lower score than consistent appearances across multiple sources over time. The more the system sees, the more it trusts what it knows.
+
+### What the Score Tells You
+
+- **High confidence** — The ontology deeply understands this entity. Use it as the source of truth and proceed autonomously.
+- **Moderate confidence** — The ontology knows the entity but has gaps. Proceed with awareness that some context may be missing.
+- **Low confidence** — Significant gaps exist. Raise the score by providing more context before executing plans.
+- **Cold start** — The entity hasn't been ingested yet. Index relevant sources first.
+
+### Graceful Degradation
+
+Unlike static memory, confidence scores provide a trust signal *before* execution. Developers — or automated systems — can set thresholds: run autonomously when confident, require review when moderate, halt when low.
+
+The system tells you when it's safe to trust it — and when it's not.

@@ -1,0 +1,61 @@
+[2026-03-18T16:08:33Z] [INFO] UserPromptSubmit: prompt_length=12639
+[2026-03-18T16:08:33Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:29:58Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:29:58Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:31:05Z] [INFO] UserPromptSubmit: prompt_length=36
+[2026-03-18T16:31:05Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:31:18Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:31:18Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:31:28Z] [INFO] UserPromptSubmit: prompt_length=3
+[2026-03-18T16:31:28Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:31:37Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:31:37Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:32:13Z] [INFO] UserPromptSubmit: prompt_length=103
+[2026-03-18T16:32:13Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:32:41Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:32:41Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:36:02Z] [INFO] UserPromptSubmit: prompt_length=129
+[2026-03-18T16:36:02Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:37:18Z] [INFO] UserPromptSubmit: prompt_length=116
+[2026-03-18T16:37:18Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:38:26Z] [INFO] Stop: session=1d9176b9-b391-424f-a7af-356c0880d526 stop_hook_active=
+[2026-03-18T16:38:26Z] [INFO] Stop: plan detected, scoring via cosync
+[2026-03-18T16:38:26Z] [WARN] Stop: olane cosync score failed
+[2026-03-18T16:38:26Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/1d9176b9-b391-424f-a7af-356c0880d526.jsonl
+[2026-03-18T16:39:22Z] [INFO] UserPromptSubmit: prompt_length=96
+[2026-03-18T16:39:22Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:42:09Z] [INFO] Stop: session=1d9176b9-b391-424f-a7af-356c0880d526 stop_hook_active=
+[2026-03-18T16:42:09Z] [INFO] Stop: plan detected, scoring via cosync
+[2026-03-18T16:42:09Z] [WARN] Stop: olane cosync score failed
+[2026-03-18T16:42:09Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/1d9176b9-b391-424f-a7af-356c0880d526.jsonl
+[2026-03-18T16:43:25Z] [INFO] UserPromptSubmit: prompt_length=135
+[2026-03-18T16:43:25Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:43:51Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:43:51Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:43:53Z] [WARN] olane CLI failed — saved to local fallback: ingest/file
+[2026-03-18T16:50:03Z] [INFO] Stop: session=7e60a8f0-129a-44d8-9613-1093156a48fc stop_hook_active=
+[2026-03-18T16:50:03Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/7e60a8f0-129a-44d8-9613-1093156a48fc.jsonl
+[2026-03-18T16:53:20Z] [INFO] UserPromptSubmit: prompt_length=170
+[2026-03-18T16:53:20Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:54:04Z] [INFO] UserPromptSubmit: prompt_length=5
+[2026-03-18T16:54:04Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T16:58:17Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T16:58:17Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T16:58:20Z] [WARN] olane CLI failed — saved to local fallback: ingest/file
+[2026-03-18T16:58:37Z] [INFO] Stop: session=6dd5a172-5960-41c4-be8f-c38653dee188 stop_hook_active=
+[2026-03-18T16:58:37Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/6dd5a172-5960-41c4-be8f-c38653dee188.jsonl
+[2026-03-18T16:58:51Z] [INFO] UserPromptSubmit: prompt_length=76
+[2026-03-18T16:58:51Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T17:00:50Z] [INFO] UserPromptSubmit: prompt_length=45
+[2026-03-18T17:00:50Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T17:02:05Z] [INFO] UserPromptSubmit: prompt_length=165
+[2026-03-18T17:02:05Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T17:04:03Z] [INFO] Stop: session=6dd5a172-5960-41c4-be8f-c38653dee188 stop_hook_active=
+[2026-03-18T17:04:03Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/6dd5a172-5960-41c4-be8f-c38653dee188.jsonl
+[2026-03-18T17:04:20Z] [INFO] Stop: session=ea04bf2a-542c-4a00-bcf0-22d0d43cd591 stop_hook_active=
+[2026-03-18T17:04:20Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/ea04bf2a-542c-4a00-bcf0-22d0d43cd591.jsonl
+[2026-03-18T17:04:22Z] [WARN] olane CLI failed — saved to local fallback: ingest/file
+[2026-03-18T17:11:20Z] [INFO] UserPromptSubmit: prompt_length=220
+[2026-03-18T17:11:20Z] [WARN] UserPromptSubmit: olane copass question failed
+[2026-03-18T17:20:44Z] [INFO] Stop: session=8d10050f-02a9-44cc-bb3c-6d4b071e51af stop_hook_active=
+[2026-03-18T17:20:44Z] [INFO] Ingesting transcript: /Users/brendon/.claude/projects/-Users-brendon-Development-olane-olane-docs/8d10050f-02a9-44cc-bb3c-6d4b071e51af.jsonl

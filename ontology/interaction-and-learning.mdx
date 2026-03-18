@@ -1,0 +1,63 @@
+---
+title: "Interaction & Self-Improvement"
+description: "How to feed knowledge into the ontology, query it back out, and how the system learns from itself over time"
+---
+
+### Feeding Knowledge In
+
+<CardGroup cols={3}>
+  <Card title="Code Ingestion">
+    Send source code through the extraction pipeline — entities, behaviors, and relationships are automatically extracted.
+  </Card>
+  <Card title="Text Ingestion">
+    Same pipeline for natural language content — meeting notes, Slack messages, documentation, emails.
+  </Card>
+  <Card title="Project Indexing">
+    Batch-index an entire codebase to build the initial graph in one pass.
+  </Card>
+</CardGroup>
+
+### Querying Knowledge Out
+
+<CardGroup cols={2}>
+  <Card title="Natural Language Questions">
+    Ask questions directly against the ontology — *"What does this service do?"*, *"Who uses this API?"* — and get synthesized answers grounded in the graph.
+  </Card>
+  <Card title="Entity Search">
+    Find entities by name or description with similarity-based matching.
+  </Card>
+  <Card title="Context Summaries">
+    Get structured summaries of what the ontology knows about specific entities.
+  </Card>
+  <Card title="Score Checks">
+    Look up the confidence score for any entity to understand how well it's known before taking action.
+  </Card>
+</CardGroup>
+
+### How Self-Improvement Works
+
+The ontology doesn't just store knowledge — it learns from itself. This happens through a continuous feedback loop with several layers:
+
+**1. Decision Traces — The Raw Material**
+
+Every time the system acts — answering a question, scoring confidence, resolving an entity — the rationale and outcome are recorded as a **decision trace**. These traces form the observational foundation: a verifiable history of what the system did, why, and what happened next.
+
+But traces alone are just a log. Self-improvement requires what happens *on top* of them.
+
+**2. Pattern Recognition & Co-occurrence Analysis**
+
+The system analyzes traces in aggregate to surface patterns invisible in any single decision. When entities repeatedly appear together, when certain behaviors co-occur across different contexts, or when confidence gaps cluster around specific domains — these signals emerge from cross-trace analysis, not from individual observations.
+
+**3. Knowledge Artifacts — Distilled Insights**
+
+Patterns that prove stable are packaged into **knowledge artifacts**: reusable insights that inform future decisions at a higher level of abstraction than raw traces. This is how the system moves from "I saw this happen" to "I know this is generally true."
+
+**4. Gap Identification & Targeted Learning**
+
+The system generates **targeted learning questions** — specific things that, when answered, will close gaps and raise confidence. This is proactive: the ontology identifies what it *doesn't* know and prioritizes closing those gaps.
+
+**The Result**
+
+Every ingestion deepens the graph. Every query reveals where gaps remain. Every decision trace feeds back into pattern recognition. The ontology gets smarter over time without manual curation.
+
+Day 1 understanding of your codebase is fundamentally different from day 30 — and the improvement is automatic.

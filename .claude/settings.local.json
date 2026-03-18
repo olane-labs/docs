@@ -4,7 +4,36 @@
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "WebFetch(domain:mastra.ai)"
+      "WebFetch(domain:mastra.ai)",
+      "mcp__olane__context_query",
+      "mcp__olane__search_entities",
+      "Bash(wc:*)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .olane/hooks/olane-copass__user_prompt_submit.sh",
+            "timeout": 8,
+            "statusMessage": "Querying context layer..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .olane/hooks/olane-copass__stop.sh",
+            "timeout": 10,
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

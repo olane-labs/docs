@@ -162,14 +162,16 @@ In this example, Claude knows `PaymentService` well but has almost no context fo
 
 | Tool | Description |
 |------|-------------|
-| `check_project_status` | Check if the current project has been indexed and its status |
-| `context_query` | Ask a natural language question against the ontology knowledge graph |
-| `context_summary` | Get an LLM-generated context summary for canonical entities or free-form text |
-| `search_entities` | Search the ontology graph by name or description |
-| `get_score` | Score how well the knowledge graph understands a topic |
-| `ingest_code` | Ingest source code into the ontology for entity extraction |
-| `ingest_text` | Ingest text content into the ontology for entity extraction |
-| `index_project` | Index the current project for ontology enrichment |
+| `check_project_status` | Check project indexing and authentication state |
+| `cosync_question` | Ask questions about the ontology |
+| `cosync_analyze` | Analyze entities with confidence scoring |
+| `search_entities` | Search for entities in the knowledge graph |
+| `get_score` | Get cosync scores for entities |
+| `get_task_cosync` | Get cosync context for a task |
+| `get_learning_requests` | Get learning requests for low-scoring entities |
+| `ingest_code` | Ingest source code into the knowledge graph |
+| `ingest_text` | Ingest text into the knowledge graph |
+| `index_project` | Index the current project |
 
 ## CLI Reference
 
