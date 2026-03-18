@@ -1,0 +1,299 @@
+# Security & Indexing
+
+Your raw text never leaves your control unencrypted. Olane uses client-side AES-256-GCM encryption so that the data you send is encrypted before it reaches our servers, processed transiently in memory for analysis, and archived in its original encrypted form. The server never stores your plaintext.
+
+This document walks through how the encryption works end-to-end — key management, the ingestion flow, server-side processing, and archival — so you can understand exactly what happens to your data at every stage.
+
+---
+
+## The Core Guarantee
+
+When you send data to Olane for analysis:
+
+1. **You encrypt it** on your machine using a key only you possess
+2. **We decrypt it** in server memory for the duration of analysis
+3. **We archive it** in its original encrypted form to S3
+4. **We discard the key** — the DEK exists in server memory only for the lifetime of the request
+
+The structured output is stored in the database. The raw text that produced it is not.
+
+---
+
+## TL;DR (Technical)
+
+- **Raw text at rest**: Archived in S3 in its encrypted form. Cannot be read without the DEK (which requires the master key).
+- **Raw text in transit**: Encrypted before it leaves your machine. TLS provides an additional transport layer.
+- **The DEK in transit**: Wrapped with your access token via a session token. Cannot be unwrapped without a valid authentication session.
+
+---
+
+## Key Management
+
+### Your Master Key
+
+Everything starts with your master key — a secret string stored in the `COPASS_ENCRYPTION_KEY` environment variable or in your local `.olane/config.json`. You can generate one with:
+
+```bash
+olane setup
+```
+
+This interactively sets up your project, including generating a master key and saving it to `.olane/config.json`. This key never leaves your machine. If you lose it, archived encrypted data cannot be recovered — there is no key escrow.
+
+### The Data Encryption Key (DEK)
+
+The master key is not used directly for encryption. Instead, a **Data Encryption Key** is derived from it using HKDF-SHA256:
+
+```
+Master Key → HKDF-SHA256 (salt, info) → 32-byte DEK
+```
+
+The derivation is **deterministic** — the same master key always produces the same DEK. This means you don't need to store the DEK separately; you can always re-derive it from your master key.
+
+**Why deterministic?** It eliminates key storage. You never need to manage, back up, or transmit the DEK itself. Your master key is the single secret.
+
+### Session Tokens: Protecting the DEK in Transit
+
+The DEK needs to reach the server so it can decrypt your data. Rather than sending the raw DEK over the wire, we wrap it:
+
+1. A **wrap key** is derived from your Supabase access token using HKDF-SHA256
+2. The DEK is encrypted with AES-256-GCM using this wrap key
+3. The result — the **session token** — is an opaque 60-byte blob (IV + encrypted DEK + auth tag), base64-encoded
+
+```
+Access Token → HKDF-SHA256 → Wrap Key
+Wrap Key + DEK → AES-256-GCM → Session Token (opaque)
+```
+
+The server receives the session token in the `X-Encryption-Token` header and the access token in the `Authorization` header. It derives the same wrap key from the access token and unwraps the session token to recover the DEK. Without a valid access token, the session token is meaningless.
+
+---
+
+## Encryption in Detail
+
+### Algorithm: AES-256-GCM
+
+All encryption uses AES-256-GCM, an authenticated encryption scheme that provides both **confidentiality** (your data is unreadable without the key) and **integrity** (any tampering is detected).
+
+Each encryption operation produces three values:
+
+| Field | Size | Purpose |
+|---|---|---|
+| `encrypted_text` | Variable | The ciphertext (your encrypted data) |
+| `encryption_iv` | 12 bytes | A random initialization vector (nonce) |
+| `encryption_tag` | 16 bytes | An authentication tag for tamper detection |
+
+The IV is generated randomly for every encryption operation using `os.urandom(12)`. This ensures that encrypting the same plaintext twice produces different ciphertext, preventing pattern analysis.
+
+### Encrypting Data
+
+The `olane` CLI handles encryption transparently when you ingest data. You don't need to call encryption commands separately:
+
+```bash
+# Ingest text — encrypts and sends to the server automatically
+olane ingest text /path/to/document.txt
+
+# Ingest code — same encryption, optimized for source files
+olane ingest code /path/to/file.py
+```
+
+Under the hood, each ingest command encrypts the content with AES-256-GCM using the DEK derived from your master key, producing the `encrypted_text`, `encryption_iv`, and `encryption_tag` fields automatically.
+
+---
+
+## The Ingestion Flow
+
+Here is what happens when you send encrypted data to the `/ingest` endpoint:
+
+```mermaid
+sequenceDiagram
+    participant User as Olane CLI
+    participant Server as Olane Server
+    participant S3 as S3 / R2
+
+    Note over User: Master Key → HKDF-SHA256 → DEK
+    Note over User: DEK + Plaintext → AES-256-GCM<br/>→ encrypted_text + IV + tag
+    Note over User: Access Token → HKDF-SHA256 → Wrap Key<br/>Wrap Key + DEK → Session Token
+
+    User->>Server: POST /ingest<br/>Authorization: Bearer <access_token><br/>X-Encryption-Token: <session_token><br/>{ encrypted_text, IV, tag }
+
+    Note over Server: Unwrap session token<br/>using access token → DEK
+    Note over Server: DEK + encrypted_text + IV + tag<br/>→ AES-256-GCM decrypt → plaintext
+
+    Server->>S3: Archive original encrypted payload<br/>(encrypted_text + IV + tag)
+    Note over S3: Raw text at rest:<br/>encrypted, unreadable<br/>without master key
+
+    Note over Server: DEK discarded from memory
+
+    Server-->>User: 200 OK
+```
+
+### Step 1: Client-Side Encryption
+
+The `olane` CLI encrypts the plaintext and prepares the request automatically when you run an ingest command:
+
+```bash
+olane ingest text ./meeting-notes.txt
+```
+
+Under the hood, the CLI derives the DEK from your master key, encrypts the content with AES-256-GCM, creates a session token for secure DEK transport, and sends the encrypted payload to the server.
+
+### Step 2: HTTP Request
+
+The encrypted payload is sent as a standard API request:
+
+```
+POST /ingest
+Authorization: Bearer <access_token>
+X-Encryption-Token: <session_token>
+Content-Type: application/json
+
+{
+  "encrypted_text": "base64-encoded ciphertext",
+  "encryption_iv": "base64-encoded IV",
+  "encryption_tag": "base64-encoded auth tag",
+  "source_type": "meeting_notes"
+}
+```
+
+Note that the request body contains **only encrypted data**. The `text` field is absent — the server knows this is an encrypted request because `encrypted_text` is present instead.
+
+### Step 3: DEK Resolution
+
+The server's `get_dek()` dependency resolves the DEK from the headers using a priority chain:
+
+1. **`X-Encryption-Token`** (preferred): Unwraps the session token using the access token from the `Authorization` header
+2. **`X-Encryption-Key`** (legacy): Parses a base64-encoded DEK directly — supported for backward compatibility with bash-based tooling
+3. **Neither header**: Treats the request as plaintext (backward-compatible for unencrypted clients)
+
+### Step 4: Decryption
+
+The server decrypts the payload in memory:
+
+```
+Session Token + Access Token → DEK (32 bytes)
+DEK + encrypted_text + IV + tag → AES-256-GCM decrypt → plaintext
+```
+
+If the DEK is wrong or the data has been tampered with, AES-GCM decryption fails with an `InvalidTag` error and the server returns HTTP 400. There is no silent corruption.
+
+### Step 5: Archival
+
+The **original encrypted payload** (not the plaintext) is archived to S3/R2:
+
+```json
+{
+  "encrypted_text": "base64-encoded ciphertext",
+  "encryption_iv": "base64-encoded IV",
+  "encryption_tag": "base64-encoded auth tag",
+  "source_type": "meeting_notes"
+}
+```
+
+S3 object metadata is tagged with `encrypted: true` along with the IV and tag for retrieval. The plaintext is never written to disk, S3, or any persistent store.
+
+### Step 6: Cleanup
+
+The DEK is discarded when the request completes. It exists only as a local variable in the request handler — no reference is retained.
+
+---
+
+## Key Rotation
+
+To rotate your master key:
+
+1. Generate a new key with `olane setup` (into a new config) or set one directly with `olane config set copass_encryption_key <new-key>`
+2. All new ingestions will use the new DEK derived from the new master key
+3. Previously archived data remains encrypted with the old DEK — to read it, you need the old master key
+
+There is currently no automated re-encryption of archived data. If you rotate your key, retain the old master key for as long as you need access to historical archives.
+
+---
+
+## Cryptographic Primitives Summary
+
+| Component | Algorithm | Purpose |
+|---|---|---|
+| DEK derivation | HKDF-SHA256 | Derive 32-byte DEK from master key |
+| Data encryption | AES-256-GCM | Encrypt/decrypt user text |
+| Wrap key derivation | HKDF-SHA256 | Derive wrap key from access token |
+| DEK wrapping | AES-256-GCM | Encrypt DEK for transport as session token |
+| IV generation | `os.urandom(12)` | Cryptographically random 96-bit nonce per operation |
+
+All cryptographic operations use the `cryptography` library's hazmat primitives.
+
+---
+
+## Integration Quick Reference
+
+### CLI (`@olane/o-cli`)
+
+```bash
+# Setup project (generates master key)
+olane setup
+
+# Ingest text (encryption handled automatically)
+olane ingest text /path/to/file.txt
+
+# Ingest code
+olane ingest code /path/to/file.py
+
+# Check project status
+olane status
+
+# View current config
+olane config list
+
+# Update encryption key
+olane config set copass_encryption_key <new-key>
+```
+
+### API Headers
+
+| Header | Value | When |
+|---|---|---|
+| `X-Encryption-Token` | Base64 session token | Preferred — DEK wrapped with access token |
+| `X-Encryption-Key` | Base64 DEK | Legacy — raw DEK for bash-based tooling |
+| `Authorization` | `Bearer <access_token>` | Always required for authenticated requests |
+
+---
+
+## How to Update
+
+To update the Olane CLI to the latest version:
+
+```bash
+olane upgrade
+# or: olane update
+```
+
+This auto-detects your package manager (npm, pnpm, yarn, bun, or Homebrew) and updates accordingly. Use `--dry-run` to preview what would happen without making changes.
+
+You can check your current version with:
+
+```bash
+olane --version
+```
+
+Your local configuration (`.olane/config.json`) and master key are preserved across updates — no re-setup is needed.
+
+---
+
+## Frequently Asked Questions
+
+**What happens if I lose my master key?**
+Archived encrypted data becomes permanently unrecoverable. The structured output remains accessible since it is stored separately. Generate and back up your master key securely.
+
+**Why is the DEK deterministic rather than random per message?**
+A deterministic DEK means you never need to store or manage it — just re-derive it from your master key. Since each encryption operation uses a unique random IV, the ciphertext is still unique per message despite using the same key.
+
+**Why wrap the DEK with the access token instead of sending it directly?**
+The session token is opaque without a valid authentication session. If the token is intercepted (e.g., in a log), it cannot be unwrapped without the access token. The `X-Encryption-Key` header (raw DEK) is supported for backward compatibility but the session token approach is preferred.
+
+**Can I use my own key management system (KMS, Vault)?**
+The system expects a string in `COPASS_ENCRYPTION_KEY`. You can source that string from any secret manager — the crypto library doesn't care where it comes from, only that it's consistent.
+
+**Is the structured output encrypted?**
+No. The structured output is stored unencrypted. These are structured abstractions — they capture *what* was observed, not the original text. The raw text that produced them is what's protected.
+
+**What if the server is compromised during analysis?**
+During the request lifecycle, the plaintext and DEK exist in server memory. This is the trust boundary. The encryption protects data at rest (S3 archives) and provides defense-in-depth for data in transit. It does not protect against a fully compromised server at the moment of processing.
