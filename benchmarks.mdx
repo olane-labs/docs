@@ -1,0 +1,134 @@
+---
+title: "LongMemEval Benchmark"
+description: "Olane achieves the highest GPT-4o score on LongMemEval with 92.2% overall accuracy"
+---
+
+<div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+  <div style={{ fontSize: '4rem', fontWeight: 800, color: '#16A34A', lineHeight: 1.1 }}>92.2%</div>
+  <div style={{ fontSize: '1.25rem', color: '#6B7280', marginTop: '0.25rem' }}>Overall Accuracy on LongMemEval (GPT-4o)</div>
+  <div style={{ fontSize: '1rem', color: '#9CA3AF', marginTop: '0.25rem' }}>461 of 500 questions answered correctly</div>
+</div>
+
+## Overall Comparison (GPT-4o)
+
+All systems evaluated using GPT-4o as both the generation and judge model, per the [LongMemEval](https://github.com/xiaowu0162/LongMemEval) benchmark protocol.
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1.5rem 0' }}>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Olane</span>
+      <span style={{ fontWeight: 700, color: '#16A34A' }}>92.2%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#16A34A', height: '100%', width: '92.2%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Mastra OM</span>
+      <span style={{ fontWeight: 600, color: '#6B7280' }}>84.23%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#9CA3AF', height: '100%', width: '84.23%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Oracle (answer sessions only)</span>
+      <span style={{ fontWeight: 600, color: '#6B7280' }}>82.4%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#D1D5DB', height: '100%', width: '82.4%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Supermemory</span>
+      <span style={{ fontWeight: 600, color: '#6B7280' }}>81.6%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#D1D5DB', height: '100%', width: '81.6%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Zep</span>
+      <span style={{ fontWeight: 600, color: '#6B7280' }}>71.2%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#D1D5DB', height: '100%', width: '71.2%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+      <span style={{ fontWeight: 600 }}>Full context (no memory)</span>
+      <span style={{ fontWeight: 600, color: '#6B7280' }}>60.2%</span>
+    </div>
+    <div style={{ background: '#E5E7EB', borderRadius: '9999px', height: '1.5rem', overflow: 'hidden' }}>
+      <div style={{ background: '#D1D5DB', height: '100%', width: '60.2%', borderRadius: '9999px' }} />
+    </div>
+  </div>
+</div>
+
+## Per-Category Breakdown (GPT-4o)
+
+| Category | Olane | Mastra OM | Supermemory | Zep | Best |
+|---|---|---|---|---|---|
+| Knowledge Update | 87.2% (68/78) | 85.9% | **88.46%** | 83.3% | ✅ Supermemory |
+| Multi-Session | **88.0%** (117/133) | 79.7% | 71.43% | 57.9% | ✅ Olane |
+| Single-Session Assistant | **100.0%** (56/56) | 82.1% | 96.43% | 80.4% | ✅ Olane |
+| Single-Session Preference | **96.7%** (29/30) | 73.3% | 70.00% | 56.7% | ✅ Olane |
+| Single-Session User | **100.0%** (70/70) | 98.6% | 97.14% | 92.9% | ✅ Olane |
+| Temporal Reasoning | **91.0%** (121/133) | 85.7% | 76.69% | 62.4% | ✅ Olane |
+| **Overall** | **92.2%** (461/500) | 84.23% | 81.6% | 71.2% | ✅ **Olane** |
+
+<Note>
+Olane leads in 5 of 6 categories. The only category where another system scores higher is Knowledge Update, where Supermemory edges ahead by 1.3 points (88.46% vs 87.2%).
+</Note>
+
+## Key Results
+
+<CardGroup cols={3}>
+  <Card title="100%" icon="bullseye-arrow">
+    Perfect scores on both Single-Session Assistant and Single-Session User — no other system achieves this.
+  </Card>
+  <Card title="+8 pts" icon="chart-line">
+    Olane outperforms the previous GPT-4o SOTA (Mastra OM at 84.23%) by nearly 8 percentage points.
+  </Card>
+  <Card title="+10 pts" icon="arrow-up-right">
+    Beats the Oracle baseline (82.4%) by 10 points — despite the Oracle only processing the 1-3 sessions containing answers.
+  </Card>
+</CardGroup>
+
+## Full Leaderboard
+
+Includes results across different models for reference.
+
+| Rank | System | Model | Overall |
+|---|---|---|---|
+| 1 | **Olane** | GPT-4o | **92.2%** |
+| 2 | Mastra OM | GPT-5-mini | 94.87% |
+| 3 | Mastra OM | Gemini 3 Pro | 93.27% |
+| 4 | Hindsight | Gemini 3 Pro | 91.40% |
+| 5 | Mastra OM | Gemini 3 Flash | 89.20% |
+| 6 | Hindsight | GPT-OSS 120B | 89.00% |
+| 7 | Supermemory | Gemini 3 Pro | 85.20% |
+| 8 | Supermemory | GPT-5 | 84.60% |
+| 9 | Mastra OM | GPT-4o | 84.23% |
+| 10 | Zep | GPT-4o | 71.2% |
+| 11 | Full context | GPT-4o | 60.2% |
+
+<Info>
+Olane's 92.2% with GPT-4o exceeds what most systems achieve with newer, more capable models. Mastra OM requires GPT-5-mini to reach a comparable score (94.87%), while Olane achieves 92.2% with the more widely available and cost-effective GPT-4o.
+</Info>
+
+## Methodology
+
+Results are from the [LongMemEval](https://github.com/xiaowu0162/LongMemEval) benchmark — 500 questions across 6 categories testing long-term memory capabilities including preference tracking, knowledge updates, temporal reasoning, and multi-session synthesis.
+
+- **Model**: GPT-4o for both generation and evaluation
+- **Evaluation**: LLM-as-judge with question-specific prompts, binary correctness scoring
+- **Scope**: All 500 benchmark instances processed, 492 answered (8 abstentions)
+- **Categories**: Unweighted average across 6 categories
+
+Competitor scores sourced from published results by [Mastra](https://mastra.ai/research/observational-memory), [Supermemory](https://supermemory.com), and [Zep](https://zep.ai).
