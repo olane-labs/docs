@@ -243,7 +243,7 @@ olane ingest code /path/to/file.py
 olane status
 
 # View current config
-olane config get
+olane config list
 
 # Update encryption key
 olane config set copass_encryption_key <new-key>
@@ -264,13 +264,11 @@ olane config set copass_encryption_key <new-key>
 To update the Olane CLI to the latest version:
 
 ```bash
-# npm
-npm update -g @olane/o-cli
-
-# Homebrew (assuming you already installed it via brew earlier)
-brew update
-brew upgrade olane
+olane upgrade
+# or: olane update
 ```
+
+This auto-detects your package manager (npm, pnpm, yarn, bun, or Homebrew) and updates accordingly. Use `--dry-run` to preview what would happen without making changes.
 
 You can check your current version with:
 

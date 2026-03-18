@@ -3,8 +3,9 @@ title: "Copass by Olane"
 description: "Ontology graph-powered context layer to enable Functional Memory for Claude Code"
 ---
 
+Teach Claude **why**, not just **what**.
+
 Claude Code plugin for [Olane](https://olane.com).
-Other coding agent support coming soon.
 
 ## Installation
 
@@ -18,8 +19,10 @@ brew install olane-labs/tap/olane
 ### 2. Authenticate & Setup
 
 ```bash
-olane login # sign up via this command as well
-olane setup # adds the mcp via (.mcp.json) + file indexing for the current folder
+olane login    # sign up via this command as well
+olane logout   # clear credentials
+olane setup    # adds the mcp via (.mcp.json) + file indexing for the current folder
+# or: olane setup -y  # non-interactive with recommended settings (useful for CI)
 ```
 
 <Accordion title="Manual MCP configuration">
@@ -39,7 +42,7 @@ If you prefer to configure the MCP server manually, add the following to your MC
 </Accordion>
 
 <Tip>
-Having trouble? Try re-indexing your project: `olane index --mode full`
+Having trouble? Try re-indexing your project: `olane index --mode full`. Additional flags: `--max-files <n>`, `--dry-run`, `--json`.
 </Tip>
 
 ## The Problem
@@ -128,6 +131,51 @@ In this example, Claude knows `PaymentService` well but has almost no context fo
 | `get_task_cosync` | Get cosync context for a task |
 | `get_learning_requests` | Get learning requests for low-scoring entities |
 | `index_project` | Index the current project |
+
+## CLI Reference
+
+Beyond setup and indexing, the CLI exposes several commands for interacting with the ontology graph directly.
+
+### Search
+
+```bash
+olane search <query>        # search the ontology graph for entities, relationships, and context
+```
+
+### Copass (CLI equivalents of MCP tools)
+
+```bash
+olane copass question <question>   # ask a question about the ontology
+olane copass context               # get cosync context for the current task
+olane copass score                 # get cosync scores for entities
+```
+
+### Watch
+
+```bash
+olane watch                 # start continuous indexing — watches for file changes and re-indexes automatically
+```
+
+### API Key Management
+
+```bash
+olane api-key               # manage API keys for programmatic access
+```
+
+### Ingest Flags
+
+The `olane ingest` commands accept additional flags:
+
+```bash
+olane ingest text /path/to/file.txt \
+  --stdin               # read from stdin instead of a file \
+  --language <lang>     # specify language (e.g. "en") \
+  --additional-context <ctx>  # extra context to associate with the ingestion \
+  --project-id <id>     # target a specific project \
+  --json                # output results as JSON \
+  --source-type <type>  # classify the source (e.g. "meeting_notes", "documentation") \
+  --entity-hints <hints> # hint at expected entities to improve extraction
+```
 
 ## Architecture
 
