@@ -5,6 +5,78 @@ description: "Ontology graph-powered development context to enable Functional Me
 
 Claude Code plugin for [Olane](https://olane.com).
 
+## The Problem
+
+Claude Code starts every conversation blank. It can read your code, but code doesn't capture **why** something was built a certain way, how entities in your system relate, what was decided in last week's session, or the tribal knowledge that lives in your team's heads. Without this context, Claude confidently makes changes based on incomplete understanding — and the more complex your project, the worse this gets.
+
+## Functional Memory
+
+Copass creates a **continuous knowledge loop** between Claude Code and a persistent ontology graph, so that every conversation starts with the context from all previous ones.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Claude as Claude Code
+    participant Copass as Copass Knowledge Layer
+
+    User->>Claude: Submits prompt
+    Note over Claude,Copass: Hook: auto-query context
+    Copass-->>Claude: Inject relevant domain context,<br/>entity relationships, prior decisions
+
+    Claude->>Claude: Works with enriched context
+
+    Note over Claude,Copass: Hook: capture mutations
+    Claude-->>Copass: Code changes, observations
+
+    Claude->>User: Responds with plan
+    Note over Claude,Copass: Hook: score the plan
+    Copass-->>Claude: Cosync scores per entity —<br/>how well-understood is each part?
+
+    Claude->>User: Shows confidence scores,<br/>flags knowledge gaps
+
+    Note over Claude,Copass: Hook: ingest transcript
+    Claude-->>Copass: Full session transcript
+    Note over Copass: Knowledge layer grows →<br/>next conversation is smarter
+```
+
+### What happens at each stage
+
+<Steps>
+  <Step title="Context injection (on every prompt)">
+    Before Claude sees your message, Copass is queried for relevant context — domain knowledge, entity relationships, prior decisions — and injects it automatically. You never need to re-explain what was discussed before.
+  </Step>
+  <Step title="Mutation capture (on code changes)">
+    Every `Edit`, `Write`, and `NotebookEdit` is captured and ingested into the knowledge graph asynchronously. Claude's work product becomes future context without anyone curating it.
+  </Step>
+  <Step title="Plan confidence scoring (before execution)">
+    When Claude proposes a plan, Copass scores each entity involved. High scores mean Copass has strong context — proceed confidently. Low scores mean Claude is operating in a knowledge gap and should confirm with you first.
+  </Step>
+  <Step title="Transcript ingestion (on session end)">
+    The full conversation transcript is ingested when the session ends. Decisions, rationale, and discussion all become retrievable context for future sessions.
+  </Step>
+</Steps>
+
+### Cosync Scores
+
+Cosync scores answer the question: **"How much does Copass actually know about what Claude is about to do?"**
+
+Scores are displayed automatically in two places:
+
+- **On plans** — Claude shows per-entity scores before executing. Entities with low scores are flagged so you can provide missing context.
+- **On permission requests** — When Claude asks to run a command or edit a file, you see at a glance whether the action is in well-understood territory.
+
+```
+━━ Copass Scores ━━
+
+  PaymentService: ████████████ 92%
+  WebhookHandler: ████████░░░░ 67%
+  RateLimiter:    ██░░░░░░░░░░ 15%
+
+  Total: ████████░░░░░░░░░░░░ 58%
+```
+
+In this example, Claude knows `PaymentService` well but has almost no context for `RateLimiter` — it should ask you before making changes there.
+
 ## Installation
 
 ### 1. Install the CLI
@@ -56,9 +128,9 @@ Having trouble? Try re-indexing your project: `olane index --mode full`
 | `get_learning_requests` | Get learning requests for low-scoring entities |
 | `index_project` | Index the current project |
 
-## How It Works
+## Architecture
 
-The plugin runs `olane copass --mcp` which starts a unified MCP server over stdio. All authentication and encryption is handled by the Olane CLI — no separate local/remote servers needed.
+The plugin runs `olane copass --mcp` which starts a unified MCP server over stdio. All authentication and encryption is handled by the Olane CLI — no separate local/remote servers needed. Your raw text is encrypted client-side before transmission (see [Security & Indexing](/indexing) for details).
 
 ## Requirements
 
