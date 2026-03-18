@@ -5,6 +5,42 @@ description: "Ontology graph-powered development context to enable Functional Me
 
 Claude Code plugin for [Olane](https://olane.com).
 
+## Installation
+
+### 1. Install the CLI
+
+```bash
+brew install olane-labs/tap/olane
+# or: npm install -g @olane/o-cli
+```
+
+### 2. Authenticate & Setup
+
+```bash
+olane login # sign up via this command as well
+olane setup # adds the mcp via (.mcp.json) + file indexing for the current folder
+```
+
+<Accordion title="Manual MCP configuration">
+If you prefer to configure the MCP server manually, add the following to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "copass": {
+      "type": "stdio",
+      "command": "olane",
+      "args": ["copass", "--mcp"]
+    }
+  }
+}
+```
+</Accordion>
+
+<Tip>
+Having trouble? Try re-indexing your project: `olane index --mode full`
+</Tip>
+
 ## The Problem
 
 Claude Code starts every conversation blank. It can read your code, but code doesn't capture **why** something was built a certain way, how entities in your system relate, what was decided in last week's session, or the tribal knowledge that lives in your team's heads. Without this context, Claude confidently makes changes based on incomplete understanding — and the more complex your project, the worse this gets.
@@ -76,42 +112,6 @@ Scores are displayed automatically in two places:
 ```
 
 In this example, Claude knows `PaymentService` well but has almost no context for `RateLimiter` — it should ask you before making changes there.
-
-## Installation
-
-### 1. Install the CLI
-
-```bash
-brew install olane-labs/tap/olane
-# or: npm install -g @olane/o-cli
-```
-
-### 2. Authenticate & Setup
-
-```bash
-olane login # sign up via this command as well
-olane setup # adds the mcp via (.mcp.json) + file indexing for the current folder
-```
-
-<Accordion title="Manual MCP configuration">
-If you prefer to configure the MCP server manually, add the following to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "copass": {
-      "type": "stdio",
-      "command": "olane",
-      "args": ["copass", "--mcp"]
-    }
-  }
-}
-```
-</Accordion>
-
-<Tip>
-Having trouble? Try re-indexing your project: `olane index --mode full`
-</Tip>
 
 ## Tools
 
